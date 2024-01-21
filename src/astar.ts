@@ -12,10 +12,11 @@ function heuristic(a: Gnode, b: Gnode): number {
 	return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-export function astar(grid: Gnode[][], start: Gnode, end: Gnode): Gnode[] | null {
+export function* astar(grid: Gnode[][], start: Gnode, end: Gnode) {
 	console.log('astar');
 	const openSet: Gnode[] = [start];
-	const closedSet: boolean[][] = Array(grid.length).fill(false).map(() => Array(grid[0].length).fill(false));
+	//const closedSet: boolean[][] = Array(grid.length).fill(false).map(() => Array(grid[0].length).fill(false));
+	const closedSet: Gnode[] = [];
 
 	while(openSet.length > 0) {
 		openSet.sort((a, b) => a.fScore - b.fScore);
@@ -28,15 +29,18 @@ export function astar(grid: Gnode[][], start: Gnode, end: Gnode): Gnode[] | null
 				path.push(temp);
 				temp = temp.cameFrom;
 			}
-			return path;
+			yield { openSet: openSet, closedSet: closedSet, path: path };
+			return;
 		}
 
-		closedSet[current.y][current.x] = true;
+		//closedSet[current.y][current.x] = true;
+		closedSet.push(current);
 
 		const neighbors = getNeighbors(grid, current);
 
 		for (const neighbor of neighbors) {
-			if(closedSet[neighbor.y][neighbor.x]) continue;
+			//if(closedSet[neighbor.y][neighbor.x]) continue;
+			if(closedSet.includes(neighbor)) continue;
 			const tentativeGScore = current.gScore + d(current, neighbor);
 			if(tentativeGScore < neighbor.gScore) {
 				neighbor.cameFrom = current;
@@ -49,6 +53,7 @@ export function astar(grid: Gnode[][], start: Gnode, end: Gnode): Gnode[] | null
 				}
 			}
 		}
+		yield { openSet: [...openSet], closedSet: closedSet };
 	}
 
 	return null;

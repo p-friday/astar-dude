@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import Cell from "./lib/Cell.svelte";
   import { astar, type Gnode } from "./astar";
+  import { isMouseDown } from "./stores";
 
   let gridWidth = 20;
   let gridHeight = 20;
@@ -21,18 +22,109 @@
   let start = grid[0][0];
   let end = grid[gridHeight - 1][gridWidth - 1];
   let path: Gnode[] | null = [];
+  let openSet: Gnode[] = [];
+  let closedSet: Gnode[] = [];
+  let result: Gnode[] | null = null;
+  let isDragging: boolean;
 
-  function findPath() {
-    path = astar(grid, start, end);
+  isMouseDown.subscribe((value) => {
+    isDragging = value;
+  });
+
+  async function findPath() {
+    const generator = astar(grid, start, end);
+
+    for await (const {
+      openSet: newOpenSet,
+      closedSet: newClosedSet,
+      path: newPath,
+    } of generator) {
+      openSet = newOpenSet;
+      closedSet = newClosedSet;
+
+      if (newPath) {
+        result = newPath;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    if (result) {
+      path = result.reverse();
+    }
+  }
+
+  function resetGrid() {
+    grid = Array.from({ length: gridHeight }, (_, y) =>
+      Array.from({ length: gridWidth }, (_, x) => ({
+        x,
+        y,
+        weight: 1,
+        gScore: x === 0 && y === 0 ? 0 : Infinity,
+        hScore: Math.abs(x - (gridWidth - 1)) + Math.abs(y - (gridHeight - 1)),
+        fScore: Infinity,
+        cameFrom: null,
+      }))
+    );
+
+    start = grid[0][0];
+    end = grid[gridHeight - 1][gridWidth - 1];
+    path = [];
+    openSet = [];
+    closedSet = [];
+    result = null;
+  }
+
+  function resetPath() {
+    grid.forEach((row) => {
+      row.forEach((cell) => {
+        cell.gScore = cell.x === 0 && cell.y === 0 ? 0 : Infinity;
+        cell.fScore = Infinity;
+        cell.cameFrom = null;
+      });
+    });
+    path = [];
+    openSet = [];
+    closedSet = [];
+    result = null;
+  }
+
+  function clearWalls() {
+    if (result) {
+      resetGrid();
+    } else {
+      grid = Array.from({ length: gridHeight }, (_, y) =>
+        Array.from({ length: gridWidth }, (_, x) => ({
+          x,
+          y,
+          weight: 1,
+          gScore: x === 0 && y === 0 ? 0 : Infinity,
+          hScore:
+            Math.abs(x - (gridWidth - 1)) + Math.abs(y - (gridHeight - 1)),
+          fScore: Infinity,
+          cameFrom: null,
+        }))
+      );
+
+      start = grid[0][0];
+      end = grid[gridHeight - 1][gridWidth - 1];
+    }
   }
 </script>
 
 <button on:click={findPath}>Find Path</button>
-<div class="grid" style="--grid-width: {gridWidth}">
+<button on:click={clearWalls}>Clear</button>
+<button on:click={resetPath}>Reset Path</button>
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div
+  class="grid"
+  style="--grid-width: {gridWidth}"
+  on:mouseup={() => isMouseDown.set(false)}
+>
   {#each grid as row, y}
     <div class="row">
       {#each row as cell, x}
-        <Cell {cell} {path} />
+        <Cell {cell} {path} {openSet} {closedSet} {start} {end} />
       {/each}
     </div>
   {/each}
