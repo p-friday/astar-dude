@@ -24,7 +24,7 @@
 
   $: if (path?.includes(cell)) {
     isPath = true;
-    animationDelay = path.indexOf(cell) * 0.1;
+    animationDelay = path.indexOf(cell) * 0.05;
   }
 
   function toggleWall() {

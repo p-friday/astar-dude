@@ -24,7 +24,7 @@ export function* astar(grid: Gnode[][], start: Gnode, end: Gnode) {
 
 		if(current === end) {
 			const path: Gnode[] = [];
-			let temp = current;
+			let temp = current.cameFrom!;
 			while(temp.cameFrom) {
 				path.push(temp);
 				temp = temp.cameFrom;

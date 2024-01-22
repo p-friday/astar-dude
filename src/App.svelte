@@ -1,13 +1,26 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Cell from "./lib/Cell.svelte";
   import { astar, type Gnode } from "./astar";
   import { isMouseDown } from "./stores";
 
-  let gridWidth = 20;
-  let gridHeight = 20;
+  let w;
+  let h;
+  let size = 20;
+  let text = "edit this text";
 
-  let grid: Gnode[][] = Array.from({ length: gridHeight }, (_, y) =>
+  let height: number;
+  let width: number;
+
+  let innerHeight = 400;
+  let innerWidth = 400;
+
+  // let gridWidth = 20;
+  // let gridHeight = 20;
+
+  let gridWidth = 40;
+  let gridHeight = 25;
+
+  let grid = Array.from({ length: gridHeight }, (_, y) =>
     Array.from({ length: gridWidth }, (_, x) => ({
       x,
       y,
@@ -46,7 +59,7 @@
         result = newPath;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 40));
     }
 
     if (result) {
@@ -112,23 +125,32 @@
   }
 </script>
 
-<button on:click={findPath}>Find Path</button>
-<button on:click={clearWalls}>Clear</button>
-<button on:click={resetPath}>Reset Path</button>
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-  class="grid"
-  style="--grid-width: {gridWidth}"
-  on:mouseup={() => isMouseDown.set(false)}
->
-  {#each grid as row, y}
-    <div class="row">
-      {#each row as cell, x}
-        <Cell {cell} {path} {openSet} {closedSet} {start} {end} />
-      {/each}
-    </div>
-  {/each}
-</div>
+<svelte:window bind:innerWidth bind:innerHeight />
+
+<main class="flex flex-col">
+  <div>{innerWidth} x {innerHeight}</div>
+  <div class="nav">
+    <button on:click={findPath}>Find Path</button>
+    <button on:click={clearWalls}>Clear</button>
+    <button on:click={resetPath}>Reset Path</button>
+  </div>
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    class="grid"
+    style="--grid-width: {gridWidth}"
+    on:mouseup={() => isMouseDown.set(false)}
+    bind:clientWidth={width}
+    bind:clientHeight={height}
+  >
+    {#each grid as row, y}
+      <div class="row">
+        {#each row as cell, x}
+          <Cell {cell} {path} {openSet} {closedSet} {start} {end} />
+        {/each}
+      </div>
+    {/each}
+  </div>
+</main>
 
 <style>
   .grid {
